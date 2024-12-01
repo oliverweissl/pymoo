@@ -5,6 +5,7 @@ import numpy as np
 import pymoo.gradient.toolbox as anp
 from pymoo.util.cache import Cache
 from pymoo.util.misc import at_least_2d_array
+from pymoo.core.variable import Choice
 
 try:
     import ray
@@ -126,7 +127,7 @@ class Problem:
                  xl=None,
                  xu=None,
                  vtype=None,
-                 vars=None,
+                 vars: dict[Choice] | None = None,
                  elementwise=False,
                  elementwise_func=ElementwiseEvaluationFunction,
                  elementwise_runner=LoopedElementwiseEvaluation(),
@@ -190,10 +191,15 @@ class Problem:
             self.vars = vars
             self.n_var = len(vars)
 
-            if self.xl is None:
-                self.xl = {name: var.lb if hasattr(var, "lb") else None for name, var in vars.items()}
-            if self.xu is None:
-                self.xu = {name: var.ub if hasattr(var, "ub") else None for name, var in vars.items()}
+            self.xl = self.xl or {name: var.lb if hasattr(var, "lb") else None for name, var in vars.items()}
+            self.xu = self.xu or {name: var.ub if hasattr(var, "ub") else None for name, var in vars.items()}
+
+        # if it is a problem with an actual number of variables - make sure xl and xu are numpy arrays
+        if n_var > 0:
+            xlm = list(self.xl.values()) if isinstance(self.xl, dict) else self.xl
+            xum = list(self.xu.values()) if isinstance(self.xu, dict) else self.xu
+            self.xl = np.ones(self.n_var, dtype=float) * xlm
+            self.xu = np.ones(self.n_var, dtype=float) * xum
 
         # the variable type (only as a type hint at this point)
         self.vtype = vtype
@@ -208,19 +214,6 @@ class Problem:
 
         # whether the shapes are checked strictly
         self.strict = strict
-
-        # if it is a problem with an actual number of variables - make sure xl and xu are numpy arrays
-        if n_var > 0:
-
-            if self.xl is not None:
-                if not isinstance(self.xl, np.ndarray):
-                    self.xl = np.ones(n_var) * xl
-                self.xl = self.xl.astype(float)
-
-            if self.xu is not None:
-                if not isinstance(self.xu, np.ndarray):
-                    self.xu = np.ones(n_var) * xu
-                self.xu = self.xu.astype(float)
 
         # this defines if NaN values should be replaced or not
         self.replace_nan_values_by = replace_nan_values_by

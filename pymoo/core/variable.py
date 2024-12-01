@@ -322,6 +322,8 @@ class Choice(Variable):
         # all super constructor
         super().__init__(value=value, **kwargs)
         self.options = options
+        if options is not None:
+            self.lb, self.ub = min(options), max(options)
 
         # if strict list not provided, set to ``options``
         if all is None:
