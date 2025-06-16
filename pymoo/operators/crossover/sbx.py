@@ -50,7 +50,7 @@ def cross_sbx(X, xl, xu, eta, prob_var, prob_bin, eps=1.0e-14):
         return betaq
 
     # difference between all variables
-    delta = (y2 - y1)
+    delta = max((y2 - y1), eps)
 
     beta = 1.0 + (2.0 * (y1 - _xl) / delta)
     betaq = calc_betaq(beta)
